@@ -28,7 +28,7 @@ public class WebClientAuthClient implements AuthClient {
     @Retry(name = "authService")
     public Mono<RegisterResponse> register(AuthRegisterRequest request, String idempotencyKey) {
         return webClient.post()
-                .uri("/register")
+                .uri("/auth/register")
                 .header("X-Idempotency-Key", idempotencyKey)
                 .bodyValue(request)
                 .retrieve()
@@ -41,7 +41,7 @@ public class WebClientAuthClient implements AuthClient {
     @Retry(name = "authService")
     public Mono<Void> deleteUser(UUID userId, String idempotencyKey) {
         return webClient.delete()
-                .uri("/users/{userId}", userId)
+                .uri("/auth/{userId}", userId)
                 .header("X-Idempotency-Key", idempotencyKey)
                 .retrieve()
                 .bodyToMono(Void.class);

@@ -28,7 +28,6 @@ public class WebClientUserClient implements UserClient {
     public Mono<UserResponse> createProfile(UserCreateRequest request, String idempotencyKey) {
         return webClient.post()
                 .uri("/users")
-                .header("X-Idempotency-Key", idempotencyKey)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(UserResponse.class);
@@ -38,19 +37,18 @@ public class WebClientUserClient implements UserClient {
     @Retry(name = "userService")
     public Mono<Void> deleteProfile(UUID userId, String idempotencyKey) {
         return webClient.delete()
-                .uri("/users/{userId}", userId)
-                .header("X-Idempotency-Key", idempotencyKey)
+                .uri("/users/{id}", userId)
                 .retrieve()
-                .bodyToMono(Void.class);
+                .toBodilessEntity()
+                .then();
     }
 
     @Override
     @Retry(name = "userService")
-    public Mono<Void> restoreProfile(UUID userId, String idempotencyKey) {
+    public Mono<UserResponse> restoreProfile(UUID userId, String idempotencyKey) {
         return webClient.post()
-                .uri("/users/{userId}/restore", userId)
-                .header("X-Idempotency-Key", idempotencyKey)
+                .uri("/users/{id}/restore", userId)
                 .retrieve()
-                .bodyToMono(Void.class);
+                .bodyToMono(UserResponse.class);
     }
 }

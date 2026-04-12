@@ -1,4 +1,7 @@
 spring:
+  webflux:
+    problemdetails:
+      enabled: true
   application:
     name: gateway-service
   profiles:
@@ -13,10 +16,10 @@ spring:
           filters:
             - name: RequestRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 5 # Восстанавливаем 5 токенов в секунду
-                redis-rate-limiter.burstCapacity: 10 # Максимальный пик (всплеск) - 10 запросов
-                redis-rate-limiter.requestedTokens: 1 # Каждый запрос стоит 1 токен
-                key-resolver: "#{@ipKeyResolver}" # Ссылка на Bean, который определяет клиента
+                redis-rate-limiter.replenishRate: 5 
+                redis-rate-limiter.burstCapacity: 10 
+                redis-rate-limiter.requestedTokens: 1 
+                key-resolver: "#{@ipKeyResolver}" 
 
         - id: user-service
           uri: ${USER_SERVICE_URL:http://localhost:8082}
@@ -65,7 +68,12 @@ app:
     access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:PT15M}
     refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:P7D}
     blacklist-key-prefix: ${JWT_BLACKLIST_KEY_PREFIX:auth:jwt:blacklist:}
-
+  idempotency:
+    routes:
+      - method: POST
+        path-prefix: /api/gateway/register
+      - method: DELETE
+        path-prefix: /api/gateway/delete
   security:
     whitelist-paths:
       - /api/auth/login

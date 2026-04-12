@@ -4,6 +4,7 @@ import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +17,7 @@ import lombok.Setter;
 @Validated
 @ConfigurationProperties(prefix = "app.jwt")
 @EnableConfigurationProperties
+@Component
 public class JwtProperties {
 
     @NotBlank   

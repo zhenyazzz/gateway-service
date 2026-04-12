@@ -12,5 +12,5 @@ public interface UserClient {
 
     Mono<Void> deleteProfile(UUID userId, String idempotencyKey);
 
-    Mono<Void> restoreProfile(UUID userId, String idempotencyKey);
+    Mono<UserResponse> restoreProfile(UUID userId, String idempotencyKey);
 }
