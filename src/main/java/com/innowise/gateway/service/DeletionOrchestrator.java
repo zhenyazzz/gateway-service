@@ -17,6 +17,7 @@ import com.innowise.gateway.exception.CompensationFailedException;
 @RequiredArgsConstructor
 @Slf4j
 public class DeletionOrchestrator {
+    
     private final AuthClient authClient;
     private final UserClient userClient;
     private final OrderClient orderClient;
@@ -24,24 +25,25 @@ public class DeletionOrchestrator {
     public Mono<Void> deleteAccount(UUID userId, String idempotencyKey) {
 
         return orderClient.cancelUserOrders(userId, idempotencyKey)
-            
-            .then(Mono.defer(() -> 
-                userClient.deleteProfile(userId, idempotencyKey)
-            ))
-            
-            .then(Mono.defer(() -> 
-                authClient.deleteUser(userId, idempotencyKey)
-                    .onErrorResume(authEx -> {
-                        log.error("Failed to delete Auth for user {}. Rolling back User Profile only.", userId, authEx);
-                        
-                        return userClient.restoreProfile(userId, idempotencyKey)
-                            .onErrorResume(rollbackEx -> {
-                                log.error("CRITICAL ALARM: Failed to restore profile for user {}!", userId, rollbackEx);
-                                return Mono.empty(); 
-                            })
-                            .then(Mono.error(new CompensationFailedException("Deletion failed at Auth Service", authEx)));
-                    })
-            ));
-    }
+                .then(Mono.defer(() ->
+                        userClient.deleteProfile(userId, idempotencyKey)
+                                .onErrorResume(profileEx -> {
+                                    log.error("CRITICAL: Failed to delete User Profile for {}. Orders are already canceled! No rollback available.", userId, profileEx);
+                                    return Mono.error(new CompensationFailedException("Deletion failed at User Profile", profileEx));
+                                })
+                ))
+                .then(Mono.defer(() ->
+                        authClient.deleteUser(userId, idempotencyKey)
+                                .onErrorResume(authEx -> {
+                                    log.error("Failed to delete Auth for user {}. Rolling back User Profile only.", userId, authEx);
 
+                                    return userClient.restoreProfile(userId, idempotencyKey)
+                                            .onErrorResume(rollbackEx -> {
+                                                log.error("CRITICAL ALARM: Failed to restore profile for user {}!", userId, rollbackEx);
+                                                return Mono.empty();
+                                            })
+                                            .then(Mono.error(new CompensationFailedException("Deletion failed at Auth Service", authEx)));
+                                })
+                ));
+    }
 }

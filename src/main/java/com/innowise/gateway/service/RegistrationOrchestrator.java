@@ -28,24 +28,24 @@ public class RegistrationOrchestrator {
     public Mono<RegisterGatewayResponse> register(RegisterRequest request, String idempotencyKey) {
 
         return authClient
-            .register(registerRequestMapper.toAuthRegisterRequest(request), idempotencyKey)
-            .flatMap(registerResponse -> {
-                UUID userId = registerResponse.user().id();
+                .register(registerRequestMapper.toAuthRegisterRequest(request), idempotencyKey)
+                .flatMap(registerResponse -> {
+                    UUID userId = registerResponse.user().id();
 
-                return userClient
-                    .createProfile(registerRequestMapper.toUserCreateRequest(userId, request), idempotencyKey)
-                    .map(userResponse -> registerRequestMapper.toRegisterGatewayResponse(registerResponse, userResponse))
-                    .onErrorResume(profileEx -> {
-                        log.error("Failed to create profile for user {}. Initiating rollback.", userId, profileEx);
+                    return userClient
+                            .createProfile(registerRequestMapper.toUserCreateRequest(userId, request), idempotencyKey)
+                            .map(userResponse -> registerRequestMapper.toRegisterGatewayResponse(registerResponse, userResponse))
+                            .onErrorResume(profileEx -> {
+                                log.error("Failed to create profile for user {}!", userId, profileEx);
 
-                        return authClient
-                            .deleteUser(userId, idempotencyKey)
-                            .onErrorResume(rollbackEx -> {
-                                log.error("CRITICAL ALARM: Rollback completely failed for user {}! Manual intervention required.", userId, rollbackEx);
-                                return Mono.empty();
-                            })
-                            .then(Mono.error(new CompensationFailedException("Registration failed at User Service", profileEx)));
-                    });
-            });
+                                return authClient
+                                        .deleteUser(userId, idempotencyKey)
+                                        .onErrorResume(rollbackEx -> {
+                                            log.error("CRITICAL ALARM: Rollback completely failed for user {}!", userId, rollbackEx);
+                                            return Mono.empty(); 
+                                        })
+                                        .then(Mono.error(new CompensationFailedException("Registration failed at User Service", profileEx)));
+                            });
+                });
     }
 }
