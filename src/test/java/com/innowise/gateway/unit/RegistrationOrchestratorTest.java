@@ -26,7 +26,6 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,6 +111,6 @@ class RegistrationOrchestratorTest {
                         && ex.getCause() == profileEx)
                 .verify();
 
-        verify(authClient).deleteUser(eq(uid), eq(idem));
+        verify(authClient).deleteUser(uid, idem);
     }
 }

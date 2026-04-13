@@ -4,7 +4,7 @@ package com.innowise.gateway.idempotency;
 public sealed interface IdempotencyResult permits
         IdempotencyResult.NewRequest,
         IdempotencyResult.Processing,
-        IdempotencyResult.Cached {
+        IdempotencyResult.Done {
 
     static IdempotencyResult newRequest() {
         return new NewRequest();
@@ -14,13 +14,13 @@ public sealed interface IdempotencyResult permits
         return new Processing();
     }
 
-    static IdempotencyResult replay(CachedResponse response) {
-        return new Cached(response);
+    static IdempotencyResult done() {
+        return new Done();
     }
 
     record NewRequest() implements IdempotencyResult {}
 
     record Processing() implements IdempotencyResult {}
 
-    record Cached(CachedResponse response) implements IdempotencyResult {}
+    record Done() implements IdempotencyResult {}
 }

@@ -6,22 +6,22 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import tools.jackson.databind.ObjectMapper;
 
-import com.innowise.gateway.idempotency.CachedResponse;
 import com.innowise.gateway.idempotency.IdempotencyResult;
 import com.innowise.gateway.service.IdempotencyService;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RedisIdempotencyService implements IdempotencyService {
 
     private final ReactiveStringRedisTemplate redis;
-    private final ObjectMapper objectMapper;
 
     private static final String PREFIX = "idempotency:";
     private static final String STATE_PROCESSING = "PROCESSING";
+    private static final String STATE_DONE = "DONE";
     private static final Duration PROCESSING_TTL = Duration.ofMinutes(5);
     private static final Duration DONE_TTL = Duration.ofMinutes(30);
 
@@ -31,15 +31,13 @@ public class RedisIdempotencyService implements IdempotencyService {
 
         return redis.opsForValue().get(redisKey)
             .flatMap(value -> {
-                if (value.startsWith(STATE_PROCESSING)) {
-                    return Mono.just(IdempotencyResult.alreadyProcessing());
-                }
-
-                try {
-                    CachedResponse resp = objectMapper.readValue(value, CachedResponse.class);
-                    return Mono.just(IdempotencyResult.replay(resp));
-                } catch (Exception e) {
-                    return Mono.error(e);
+                switch (value) {
+                    case STATE_PROCESSING:
+                        return Mono.just(IdempotencyResult.alreadyProcessing());
+                    case STATE_DONE:
+                        return Mono.just(IdempotencyResult.done());
+                    default:
+                        return Mono.error(new IllegalStateException("Unknown state: " + value));
                 }
             })
             .switchIfEmpty(
@@ -55,14 +53,14 @@ public class RedisIdempotencyService implements IdempotencyService {
     }
 
     @Override
-    public Mono<Void> saveSuccess(String key, CachedResponse response) {
+    public Mono<Void> markDone(String key) {
         String redisKey = PREFIX + key;
 
         try {
-            String value = objectMapper.writeValueAsString(response);
             return redis.opsForValue()
-                .set(redisKey, value, DONE_TTL)
-                .then();
+                .set(redisKey, STATE_DONE, DONE_TTL)
+                .then()
+                .doOnError(e -> log.error("Redis idempotency markDone failed", e));
         } catch (Exception e) {
             return Mono.error(e);
         }

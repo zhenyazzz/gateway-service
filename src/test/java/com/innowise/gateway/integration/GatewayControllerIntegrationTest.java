@@ -27,7 +27,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static org.assertj.core.api.Assertions.assertThat;
 
 class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -124,10 +123,10 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         @Test
-        void sameIdempotencyKey_replaysCachedResponse_withoutSecondDownstreamCall() {
+        void sameIdempotencyKey_afterSuccess_returnsConflictWithoutSecondDownstreamCall() {
             UUID userId = UUID.randomUUID();
             RegisterRequest body = GatewayTestDtoFactory.validRegisterRequest();
-            String idemKey = "idem-cache-" + UUID.randomUUID();
+            String idemKey = "idem-done-" + UUID.randomUUID();
 
             wireMock.stubFor(post(urlEqualTo(AUTH_REGISTER))
                     .willReturn(aResponse()
@@ -141,29 +140,28 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                             .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                             .withBody(GatewayTestDtoFactory.userResponseJson(userId, body))));
 
-            String firstResponse = webTestClient.post()
+            webTestClient.post()
                     .uri(GATEWAY_REGISTER)
                     .header(IDEMPOTENCY_HEADER, idemKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(String.class)
-                    .returnResult()
-                    .getResponseBody();
+                    .expectBody()
+                    .jsonPath("$.userId").isEqualTo(userId.toString())
+                    .jsonPath("$.email").isEqualTo(body.email())
+                    .jsonPath("$.accessToken").isEqualTo("access-test-token");
 
-            String secondResponse = webTestClient.post()
+            webTestClient.post()
                     .uri(GATEWAY_REGISTER)
                     .header(IDEMPOTENCY_HEADER, idemKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(String.class)
-                    .returnResult()
-                    .getResponseBody();
+                    .expectStatus().isEqualTo(409)
+                    .expectBody()
+                    .jsonPath("$.message").isEqualTo("Already processed");
 
-            assertThat(secondResponse).isEqualTo(firstResponse);
             wireMock.verify(1, postRequestedFor(urlEqualTo(AUTH_REGISTER)));
             wireMock.verify(1, postRequestedFor(urlEqualTo("/users")));
         }

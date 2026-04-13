@@ -19,7 +19,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -121,6 +120,6 @@ class DeletionOrchestratorTest {
                 .expectError(CompensationFailedException.class)
                 .verify();
 
-        verify(userClient).restoreProfile(eq(userId), eq(idem));
+        verify(userClient).restoreProfile(userId, idem);
     }
 }

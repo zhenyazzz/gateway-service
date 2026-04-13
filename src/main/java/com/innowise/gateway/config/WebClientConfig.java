@@ -43,7 +43,6 @@ public class WebClientConfig {
     private static final String HEADER_USER_ROLES = "X-User-Roles";
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
-    // Базовая настройка HTTP-клиента с жесткими таймаутами
     private ReactorClientHttpConnector clientHttpConnector() {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
@@ -108,7 +107,6 @@ public class WebClientConfig {
             ClientRequest.Builder builder = ClientRequest.from(request);
             builder.headers(h -> h.remove(HttpHeaders.AUTHORIZATION));
 
-            // Безопасная обработка без null
             return currentPayload()
                     .doOnNext(payload -> {
                         if (payload.token() != null) {
@@ -128,7 +126,6 @@ public class WebClientConfig {
                 h.remove(HEADER_USER_ROLES);
             });
 
-            // doOnNext сработает только если currentPayload не пустой
             return currentPayload()
                     .doOnNext(payload -> {
                         if (payload.userId() != null) {
