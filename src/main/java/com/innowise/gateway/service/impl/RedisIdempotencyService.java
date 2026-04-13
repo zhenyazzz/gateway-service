@@ -15,6 +15,14 @@ import com.innowise.gateway.service.IdempotencyService;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+/**
+ * Redis-backed implementation of {@link IdempotencyService}.
+ *
+ * <p>Stores per-request state in Redis with TTL:
+ * PROCESSING for in-flight requests and DONE for completed requests.
+ *
+ * @see IdempotencyService
+ */
 public class RedisIdempotencyService implements IdempotencyService {
 
     private final ReactiveStringRedisTemplate redis;
@@ -25,6 +33,7 @@ public class RedisIdempotencyService implements IdempotencyService {
     private static final Duration PROCESSING_TTL = Duration.ofMinutes(5);
     private static final Duration DONE_TTL = Duration.ofMinutes(30);
 
+    /** {@inheritDoc} */
     @Override
     public Mono<IdempotencyResult> check(String key) {
         String redisKey = PREFIX + key;
@@ -52,6 +61,7 @@ public class RedisIdempotencyService implements IdempotencyService {
             );
     }
 
+    /** {@inheritDoc} */
     @Override
     public Mono<Void> markDone(String key) {
         String redisKey = PREFIX + key;
@@ -66,6 +76,7 @@ public class RedisIdempotencyService implements IdempotencyService {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public Mono<Void> clear(String key) {
         return redis.delete(PREFIX + key).then();

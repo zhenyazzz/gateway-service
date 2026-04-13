@@ -25,11 +25,21 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/gateway")
 @RequiredArgsConstructor
+/**
+ * Gateway API controller for user registration and account deletion orchestration.
+ */
 public class GatewayController {
 
     private final RegistrationOrchestrator registrationOrchestrator;
     private final DeletionOrchestrator deletionOrchestrator;
 
+    /**
+     * Registers a new user through orchestrated Auth and User service calls.
+     *
+     * @param request registration payload
+     * @param idempotencyKey idempotency key used to deduplicate retries
+     * @return created user aggregate response
+     */
     @PostMapping("/register")
     public Mono<ResponseEntity<RegisterGatewayResponse>> register(
         @RequestBody RegisterRequest request,
@@ -38,6 +48,13 @@ public class GatewayController {
         return registrationOrchestrator.register(request, idempotencyKey).map(ResponseEntity::ok);
     }
 
+    /**
+     * Deletes a user account through orchestrated Order, User and Auth service calls.
+     *
+     * @param userId target account identifier
+     * @param idempotencyKey idempotency key used to deduplicate retries
+     * @return no-content response when deletion flow completes
+     */
     @DeleteMapping("/delete/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Mono<ResponseEntity<Void>> delete(@PathVariable UUID userId, @RequestHeader("X-Idempotency-Key") String idempotencyKey) {
