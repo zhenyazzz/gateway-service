@@ -14,6 +14,7 @@ app:
       - method: DELETE
         path-prefix: /api/gateway/delete
   security:
+    auth-service-path-prefix: /api/auth/
     whitelist-paths:
       - /api/auth/login
       - /api/auth/register

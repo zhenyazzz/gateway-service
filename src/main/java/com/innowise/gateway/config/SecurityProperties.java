@@ -15,4 +15,5 @@ import lombok.Setter;
 public class SecurityProperties {
 
     private List<String> whitelistPaths = List.of();
+    private String authServicePathPrefix = "/api/auth/";
 }

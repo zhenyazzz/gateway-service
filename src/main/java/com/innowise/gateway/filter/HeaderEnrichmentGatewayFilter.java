@@ -25,8 +25,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
 
-    private static final String AUTH_SERVICE_PATH_PREFIX = "/api/auth/";
-
     private final SecurityProperties securityProperties;
 
     @Override
@@ -42,16 +40,20 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
             .flatMap(ctx -> {
                 Authentication authentication = ctx.getAuthentication();
                 if (authentication == null
-                    || !(authentication.getPrincipal() instanceof TokenPayload payload)) {
+                    || !(authentication.getPrincipal() instanceof TokenPayload(
+                        var userId,
+                        var email,
+                        var rolesFromToken,
+                        var rawToken
+                    ))) {
                     return chain.filter(exchange);
                 }
 
-                String rawToken = payload.token();
                 if (rawToken == null || rawToken.isBlank()) {
                     return chain.filter(exchange);
                 }
 
-                List<RoleName> roles = payload.roles() == null ? List.of() : payload.roles();
+                List<RoleName> roles = rolesFromToken == null ? List.of() : rolesFromToken;
                 String bearerAuthorization = BearerTokenConstants.BEARER_PREFIX + rawToken;
 
                 ServerHttpRequest mutatedRequest = request.mutate()
@@ -64,12 +66,12 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
                         if (isAuthServicePath(path)) {
                             h.set(HttpHeaders.AUTHORIZATION, bearerAuthorization);
                         } else {
-                            if (payload.userId() != null) {
-                                h.set("X-User-Id", payload.userId().toString());
+                            if (userId != null) {
+                                h.set("X-User-Id", userId.toString());
                             }
 
-                            if (payload.email() != null) {
-                                h.set("X-User-Email", payload.email());
+                            if (email != null) {
+                                h.set("X-User-Email", email);
                             }
 
                             h.set("X-User-Roles",
@@ -86,7 +88,7 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isAuthServicePath(String path) {
-        return path.startsWith(AUTH_SERVICE_PATH_PREFIX);
+        return path.startsWith(securityProperties.getAuthServicePathPrefix());
     }
 
     private boolean isWhitelisted(String path) {
