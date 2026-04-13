@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.Getter;
 import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
 
 @ConfigurationProperties(prefix = "app.security")
 @Component
@@ -15,5 +16,6 @@ import lombok.Setter;
 public class SecurityProperties {
 
     private List<String> whitelistPaths = List.of();
-    private String authServicePathPrefix = "/api/auth/";
+    @NotBlank
+    private String authServicePathPrefix;
 }
