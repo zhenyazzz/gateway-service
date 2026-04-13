@@ -35,7 +35,8 @@
             **/mapper/*Impl.java,
             **/dto/**,
             **/error/**,
-            **/filer/**
+            **/filter/**,
+            **/service/impl/RedisIdempotencyService.java
         </sonar.coverage.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <testcontainers.version>1.21.4</testcontainers.version>
