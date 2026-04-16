@@ -71,9 +71,9 @@ app:
   idempotency:
     routes:
       - method: POST
-        path-prefix: /api/gateway/register
+        path-prefix: /api/users/register
       - method: DELETE
-        path-prefix: /api/gateway/delete
+        path-prefix: /api/users
   security:
     auth-service-path-prefix: /api/auth/
     whitelist-paths:

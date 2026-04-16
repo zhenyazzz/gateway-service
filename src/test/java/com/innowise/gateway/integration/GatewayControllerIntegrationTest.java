@@ -30,7 +30,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String GATEWAY_REGISTER = "/api/gateway/register";
+    private static final String GATEWAY_REGISTER = "/api/users/register";
     private static final String IDEMPOTENCY_HEADER = "X-Idempotency-Key";
     private static final String AUTH_REGISTER = "/auth/register";
     private static final String HEADER_X_USER_ID = "X-User-Id";
@@ -169,7 +169,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         void whenKeyAlreadyProcessing_returnsConflict() {
             String idemKey = "idem-processing-" + UUID.randomUUID();
-            String redisKey = "idempotency:POST:/api/gateway/register:" + idemKey;
+            String redisKey = "idempotency:POST:/api/users/register:" + idemKey;
 
             redis.opsForValue().set(redisKey, "PROCESSING").block();
 
@@ -202,7 +202,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                     .willReturn(aResponse().withStatus(204)));
 
             webTestClient.delete()
-                    .uri("/api/gateway/delete/{userId}", accountUserId)
+                    .uri("/api/users/{userId}", accountUserId)
                     .header(IDEMPOTENCY_HEADER, "idem-del-ok-" + UUID.randomUUID())
                     .header(HttpHeaders.AUTHORIZATION, JwtTestTokenFactory.bearerAdminToken(jwtProperties, adminSubject))
                     .exchange()
@@ -226,7 +226,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                     .willReturn(aResponse().withStatus(204)));
 
             webTestClient.delete()
-                    .uri("/api/gateway/delete/{userId}", accountUserId)
+                    .uri("/api/users/{userId}", accountUserId)
                     .header(IDEMPOTENCY_HEADER, "idem-del-order-fail-" + UUID.randomUUID())
                     .header(HttpHeaders.AUTHORIZATION, JwtTestTokenFactory.bearerAdminToken(jwtProperties, adminSubject))
                     .exchange()
@@ -251,7 +251,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                     .willReturn(aResponse().withStatus(500).withBody("user profile down")));
 
             webTestClient.delete()
-                    .uri("/api/gateway/delete/{userId}", accountUserId)
+                    .uri("/api/users/{userId}", accountUserId)
                     .header(IDEMPOTENCY_HEADER, "idem-del-profile-fail-" + UUID.randomUUID())
                     .header(HttpHeaders.AUTHORIZATION, JwtTestTokenFactory.bearerAdminToken(jwtProperties, adminSubject))
                     .exchange()
@@ -286,7 +286,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                             .withBody(GatewayTestDtoFactory.userResponseJson(accountUserId, restoreBody))));
 
             webTestClient.delete()
-                    .uri("/api/gateway/delete/{userId}", accountUserId)
+                    .uri("/api/users/{userId}", accountUserId)
                     .header(IDEMPOTENCY_HEADER, "idem-del-auth-fail-" + UUID.randomUUID())
                     .header(HttpHeaders.AUTHORIZATION, JwtTestTokenFactory.bearerAdminToken(jwtProperties, adminSubject))
                     .exchange()
@@ -307,7 +307,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
             UUID accountUserId = UUID.randomUUID();
 
             webTestClient.delete()
-                    .uri("/api/gateway/delete/{userId}", accountUserId)
+                    .uri("/api/users/{userId}", accountUserId)
                     .header(HttpHeaders.AUTHORIZATION, JwtTestTokenFactory.bearerAdminToken(jwtProperties, adminSubject))
                     .exchange()
                     .expectStatus().isBadRequest();
