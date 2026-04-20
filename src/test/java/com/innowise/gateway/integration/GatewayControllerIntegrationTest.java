@@ -96,7 +96,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
             wireMock.stubFor(post(urlEqualTo("/users"))
                     .willReturn(aResponse().withStatus(500).withBody("user down")));
 
-            wireMock.stubFor(delete(urlPathEqualTo("/auth/" + userId))
+            wireMock.stubFor(delete(urlPathEqualTo("/auth/internal/" + userId))
                     .willReturn(aResponse().withStatus(204)));
 
             webTestClient.post()
@@ -109,7 +109,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
 
             wireMock.verify(1, postRequestedFor(urlEqualTo(AUTH_REGISTER)));
             wireMock.verify(1, postRequestedFor(urlEqualTo("/users")));
-            wireMock.verify(1, deleteRequestedFor(urlPathEqualTo("/auth/" + userId)));
+            wireMock.verify(1, deleteRequestedFor(urlPathEqualTo("/auth/internal/" + userId)));
         }
 
         @Test
