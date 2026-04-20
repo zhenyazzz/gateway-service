@@ -30,7 +30,7 @@ public interface GatewayApi {
      * @param idempotencyKey idempotency key used to deduplicate retries
      * @return created user aggregate response
      */
-    @PostMapping("/register")
+    @PostMapping("")
     Mono<ResponseEntity<RegisterGatewayResponse>> register(
             @RequestBody RegisterRequest request,
             @RequestHeader("X-Idempotency-Key") String idempotencyKey);

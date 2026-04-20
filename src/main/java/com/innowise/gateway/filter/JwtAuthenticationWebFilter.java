@@ -1,9 +1,11 @@
 package com.innowise.gateway.filter;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,8 +39,9 @@ public class JwtAuthenticationWebFilter implements WebFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
+        HttpMethod method = exchange.getRequest().getMethod();
 
-        if (isWhitelisted(path)) {
+        if (isWhitelisted(method, path)) {
             return chain.filter(exchange);
         }
 
@@ -76,9 +79,13 @@ public class JwtAuthenticationWebFilter implements WebFilter, Ordered {
                 || ex instanceof IllegalArgumentException;
     }
 
-    private boolean isWhitelisted(String path) {
-        return securityProperties.getWhitelistPaths()
-                .stream()
+    private boolean isWhitelisted(HttpMethod method, String path) {
+        if (method == null) {
+            return false;
+        }
+        Map<HttpMethod, List<String>> whitelist = securityProperties.getWhitelistPaths();
+        List<String> methodPaths = whitelist.getOrDefault(method, List.of());
+        return methodPaths.stream()
                 .anyMatch(p -> path.equals(p) || path.startsWith(p + "/"));
     }
 

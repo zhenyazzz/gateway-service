@@ -30,7 +30,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String GATEWAY_REGISTER = "/api/users/register";
+    private static final String GATEWAY_REGISTER = "/api/users";
     private static final String IDEMPOTENCY_HEADER = "X-Idempotency-Key";
     private static final String AUTH_REGISTER = "/auth/register";
     private static final String HEADER_X_USER_ID = "X-User-Id";
@@ -72,7 +72,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .exchange()
-                    .expectStatus().isOk()
+                    .expectStatus().isCreated()
                     .expectBody()
                     .jsonPath("$.userId").isEqualTo(userId.toString())
                     .jsonPath("$.email").isEqualTo(body.email())
@@ -146,7 +146,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .exchange()
-                    .expectStatus().isOk()
+                    .expectStatus().isCreated()
                     .expectBody()
                     .jsonPath("$.userId").isEqualTo(userId.toString())
                     .jsonPath("$.email").isEqualTo(body.email())
@@ -169,7 +169,7 @@ class GatewayControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         void whenKeyAlreadyProcessing_returnsConflict() {
             String idemKey = "idem-processing-" + UUID.randomUUID();
-            String redisKey = "idempotency:POST:/api/users/register:" + idemKey;
+            String redisKey = "idempotency:POST:/api/users:" + idemKey;
 
             redis.opsForValue().set(redisKey, "PROCESSING").block();
 

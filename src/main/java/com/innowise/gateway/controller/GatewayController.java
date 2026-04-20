@@ -1,5 +1,6 @@
 package com.innowise.gateway.controller;
 
+import java.net.URI;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,8 @@ public class GatewayController implements GatewayApi {
             RegisterRequest request,
             String idempotencyKey) {
         requireIdempotencyKey(idempotencyKey);
-        return registrationOrchestrator.register(request, idempotencyKey).map(ResponseEntity::ok);
+        return registrationOrchestrator.register(request, idempotencyKey)
+                .map(body -> ResponseEntity.status(HttpStatus.CREATED).body(body));
     }
 
     @Override

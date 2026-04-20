@@ -20,17 +20,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        String[] whitelistedPaths = securityProperties.getWhitelistPaths().toArray(String[]::new);
-
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .authorizeExchange(exchange -> exchange
-                        .pathMatchers(whitelistedPaths).permitAll()
-                        .anyExchange().authenticated())
+                .authorizeExchange(exchange -> {
+                    securityProperties.getWhitelistPaths().forEach((method, paths) -> {
+                        if (paths == null || paths.isEmpty()) {
+                            return;
+                        }
+                        String[] pathArray = paths.toArray(String[]::new);
+                        exchange.pathMatchers(method, pathArray).permitAll();
+                    });
+                    exchange.anyExchange().authenticated();
+                })
                 .build();
     }
 }

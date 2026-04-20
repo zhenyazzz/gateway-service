@@ -1,12 +1,14 @@
 package com.innowise.gateway.filter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -31,8 +33,9 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
+        HttpMethod method = request.getMethod();
 
-        if (isWhitelisted(path)) {
+        if (isWhitelisted(method, path)) {
             return chain.filter(exchange);
         }
 
@@ -91,9 +94,13 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
         return path.startsWith(securityProperties.getAuthServicePathPrefix());
     }
 
-    private boolean isWhitelisted(String path) {
-        return securityProperties.getWhitelistPaths()
-            .stream()
+    private boolean isWhitelisted(HttpMethod method, String path) {
+        if (method == null) {
+            return false;
+        }
+        Map<HttpMethod, List<String>> whitelist = securityProperties.getWhitelistPaths();
+        List<String> methodPaths = whitelist.getOrDefault(method, List.of());
+        return methodPaths.stream()
             .anyMatch(p -> path.equals(p) || path.startsWith(p + "/"));
     }
 
