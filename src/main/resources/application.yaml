@@ -92,6 +92,7 @@ app:
       POST:
         - /api/auth/login
         - /api/auth/register
+        - /api/auth/refresh
         - /api/users
       GET:
         - /actuator/health

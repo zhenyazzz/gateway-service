@@ -69,7 +69,7 @@ class RegistrationOrchestratorTest {
                 .assertNext(r -> assertThat(r).isEqualTo(gatewayResp))
                 .verifyComplete();
 
-        verify(authClient, never()).deleteUser(any(), any());
+        verify(authClient, never()).deleteUserInternal(any(), any());
     }
 
     @Test
@@ -82,7 +82,7 @@ class RegistrationOrchestratorTest {
         when(authClient.register(authReq, idem)).thenReturn(Mono.just(authResp));
         when(registerRequestMapper.toUserCreateRequest(uid, request)).thenReturn(createReq);
         when(userClient.createProfile(createReq, idem)).thenReturn(Mono.error(profileEx));
-        when(authClient.deleteUser(uid, idem)).thenReturn(Mono.empty());
+        when(authClient.deleteUserInternal(uid, idem)).thenReturn(Mono.empty());
 
         StepVerifier.create(orchestrator.register(request, idem))
                 .expectErrorMatches(ex -> ex instanceof CompensationFailedException
@@ -90,7 +90,7 @@ class RegistrationOrchestratorTest {
                         && ex.getCause() == profileEx)
                 .verify();
 
-        verify(authClient).deleteUser(uid, idem);
+        verify(authClient).deleteUserInternal(uid, idem);
     }
 
     @Test
@@ -103,7 +103,7 @@ class RegistrationOrchestratorTest {
         when(authClient.register(authReq, idem)).thenReturn(Mono.just(authResp));
         when(registerRequestMapper.toUserCreateRequest(uid, request)).thenReturn(createReq);
         when(userClient.createProfile(createReq, idem)).thenReturn(Mono.error(profileEx));
-        when(authClient.deleteUser(uid, idem))
+        when(authClient.deleteUserInternal(uid, idem))
                 .thenReturn(Mono.error(new RuntimeException("rollback failed")));
 
         StepVerifier.create(orchestrator.register(request, idem))
@@ -111,6 +111,6 @@ class RegistrationOrchestratorTest {
                         && ex.getCause() == profileEx)
                 .verify();
 
-        verify(authClient).deleteUser(uid, idem);
+        verify(authClient).deleteUserInternal(uid, idem);
     }
 }

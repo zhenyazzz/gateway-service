@@ -39,7 +39,7 @@ public class RegistrationOrchestrator {
                                 log.error("Failed to create profile for user {}!", userId, profileEx);
 
                                 return authClient
-                                        .deleteUser(userId, idempotencyKey)
+                                        .deleteUserInternal(userId, idempotencyKey)
                                         .onErrorResume(rollbackEx -> {
                                             log.error("CRITICAL ALARM: Rollback completely failed for user {}!", userId, rollbackEx);
                                             return Mono.empty(); 

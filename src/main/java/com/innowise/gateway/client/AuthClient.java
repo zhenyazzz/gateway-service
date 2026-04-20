@@ -11,4 +11,6 @@ public interface AuthClient {
     Mono<RegisterResponse> register(AuthRegisterRequest request, String idempotencyKey);
 
     Mono<Void> deleteUser(UUID userId, String idempotencyKey);
+
+    Mono<Void> deleteUserInternal(UUID userId, String idempotencyKey);
 }

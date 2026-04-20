@@ -46,4 +46,14 @@ public class WebClientAuthClient implements AuthClient {
                 .retrieve()
                 .bodyToMono(Void.class);
     }
+
+    @Override
+    @Retry(name = "authService")
+    public Mono<Void> deleteUserInternal(UUID userId, String idempotencyKey) {
+        return webClient.delete()
+                .uri("/auth/internal/{userId}", userId)
+                .header("X-Idempotency-Key", idempotencyKey)
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
 }
