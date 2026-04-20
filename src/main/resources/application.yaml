@@ -24,10 +24,42 @@ spring:
                 redis-rate-limiter.requestedTokens: 1 
                 key-resolver: "#{@ipKeyResolver}" 
 
+        - id: user-service-internal-block
+          uri: no://op 
+          predicates:
+            - Path=/api/users/internal/**
+          filters:
+            - SetStatus=403 
+
+        - id: user-service-cards
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/cards/**
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@ipKeyResolver}"
+
+        - id: user-service-restore
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/users/*/restore
+            - Method=POST
+          filters:
+            - name: StripPrefix
+              args:
+                parts: 1
+
         - id: user-service
           uri: ${USER_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/users/**
+            - Method=GET,PUT,PATCH,HEAD,OPTIONS
           filters:
             - name: StripPrefix
               args:
