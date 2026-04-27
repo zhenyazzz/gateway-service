@@ -7,7 +7,6 @@ import com.innowise.gateway.exception.TokenRevokedException;
 
 import lombok.RequiredArgsConstructor;
 
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -74,10 +73,10 @@ public class JwtService {
 
     private Claims parseClaims(String token) {
         return Jwts.parser()
-            .verifyWith(signingKey)
-            .requireIssuer(props.getIssuer())
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+                .verifyWith(signingKey)
+                .requireIssuer(props.getIssuer())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

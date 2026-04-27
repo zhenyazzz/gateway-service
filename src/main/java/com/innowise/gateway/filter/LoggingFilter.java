@@ -1,29 +1,28 @@
 package com.innowise.gateway.filter;
 
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
-@Component
-@RequiredArgsConstructor
 @Slf4j
-public class LoggingFilter implements GlobalFilter, Ordered{
-
+@Component
+public class LoggingFilter implements WebFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return GatewayFilterOrders.LOGGING;
+        return GatewayFilterOrders.HTTP_ACCESS_LOG;
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
         String method = request.getMethod() != null ? request.getMethod().name() : "UNKNOWN";
@@ -35,22 +34,38 @@ public class LoggingFilter implements GlobalFilter, Ordered{
         log.info("REQUEST: id={} method={} path={} query={}", requestId, method, path, query);
 
         return chain.filter(exchange)
-            .doOnSuccess(unused -> {
-                int status = exchange.getResponse().getStatusCode() != null
-                    ? exchange.getResponse().getStatusCode().value()
-                    : 0;
+            .doOnError(ex -> log.error(
+                "CHAIN ERROR: id={} method={} path={} tookMs={} message={}",
+                requestId,
+                method,
+                path,
+                System.currentTimeMillis() - start,
+                ex.getMessage(),
+                ex
+            ))
+            .doFinally(signal -> {
                 long tookMs = System.currentTimeMillis() - start;
-                log.info("RESPONSE: id={} method={} path={} status={} tookMs={}",
-                    requestId, method, path, status, tookMs);
-            })
-            .doOnError(ex -> {
-                long tookMs = System.currentTimeMillis() - start;
-                int status = exchange.getResponse().getStatusCode() != null
-                    ? exchange.getResponse().getStatusCode().value()
-                    : 0;
-                log.error("ERROR: id={} method={} path={} status={} tookMs={} message={}",
-                    requestId, method, path, status, tookMs, ex.getMessage(), ex);
+                HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
+                int status = statusCode != null ? statusCode.value() : 0;
+                if (signal == SignalType.ON_COMPLETE) {
+                    log.info(
+                        "RESPONSE: id={} method={} path={} status={} tookMs={}",
+                        requestId,
+                        method,
+                        path,
+                        status,
+                        tookMs
+                    );
+                } else if (signal == SignalType.CANCEL) {
+                    log.warn(
+                        "REQUEST CANCELLED: id={} method={} path={} status={} tookMs={}",
+                        requestId,
+                        method,
+                        path,
+                        status,
+                        tookMs
+                    );
+                }
             });
     }
-
 }

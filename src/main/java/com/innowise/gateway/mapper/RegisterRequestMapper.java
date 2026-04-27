@@ -17,6 +17,7 @@ public interface RegisterRequestMapper {
 
     AuthRegisterRequest toAuthRegisterRequest(RegisterRequest request);
 
+    @Mapping(target = "email", source = "request.login")
     UserCreateRequest toUserCreateRequest(UUID id, RegisterRequest request);
 
     @Mapping(target = "userId", source = "registerResponse.user.id")

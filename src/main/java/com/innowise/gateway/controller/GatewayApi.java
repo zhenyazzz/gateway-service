@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import jakarta.validation.Valid;
+
 import com.innowise.gateway.dto.request.RegisterRequest;
 import com.innowise.gateway.dto.response.RegisterGatewayResponse;
 
@@ -32,17 +34,19 @@ public interface GatewayApi {
      */
     @PostMapping("")
     Mono<ResponseEntity<RegisterGatewayResponse>> register(
-            @RequestBody RegisterRequest request,
+            @Valid @RequestBody RegisterRequest request,
             @RequestHeader("X-Idempotency-Key") String idempotencyKey);
 
     /**
      * Deletes a user account through orchestrated Order, User and Auth service calls.
+     * Uses {@code /accounts/{userId}} so {@code GET /api/users/{id}} is proxied to user-service
+     * (same path with only {@code DELETE} here would yield 405 for GET).
      *
      * @param userId target account identifier
      * @param idempotencyKey idempotency key used to deduplicate retries
      * @return no-content response when deletion flow completes
      */
-    @DeleteMapping("/{userId}")
+    @DeleteMapping("/accounts/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     Mono<ResponseEntity<Void>> delete(
             @PathVariable UUID userId,
