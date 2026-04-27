@@ -25,12 +25,7 @@ public record RegisterRequest(
     String surname,
 
     @Past(message = "Birth date must be in the past")
-    LocalDate birthDate,
-
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    @Size(max = 255, message = "Email must not exceed 255 characters")
-    String email
+    LocalDate birthDate
 ) {
 
 }

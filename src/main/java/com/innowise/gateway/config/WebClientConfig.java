@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -85,9 +87,12 @@ public class WebClientConfig {
 
     private Mono<TokenPayload> currentPayload() {
         return ReactiveSecurityContextHolder.getContext()
-                .map(ctx -> ctx.getAuthentication())
+                .map(SecurityContext::getAuthentication)
+                .filter(UsernamePasswordAuthenticationToken.class::isInstance)
                 .cast(UsernamePasswordAuthenticationToken.class)
-                .map(auth -> (TokenPayload) auth.getPrincipal());
+                .map(Authentication::getPrincipal)
+                .filter(TokenPayload.class::isInstance)
+                .cast(TokenPayload.class);
     }
 
     private ExchangeFilterFunction requestIdFilter() {

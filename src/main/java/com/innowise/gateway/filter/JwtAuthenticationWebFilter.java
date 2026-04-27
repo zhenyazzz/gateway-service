@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -18,6 +20,7 @@ import org.springframework.web.server.WebFilterChain;
 
 import com.innowise.gateway.config.SecurityProperties;
 import com.innowise.gateway.security.BearerTokenConstants;
+import com.innowise.gateway.security.GatewaySecurityExchangeAttributes;
 import com.innowise.gateway.exception.TokenRevokedException;
 import com.innowise.gateway.security.JwtService;
 import com.innowise.gateway.security.RoleName;
@@ -25,16 +28,15 @@ import com.innowise.gateway.security.RoleName;
 import io.jsonwebtoken.JwtException;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class JwtAuthenticationWebFilter implements WebFilter, Ordered {
 
     private final JwtService jwtService;
     private final SecurityProperties securityProperties;
+    private final ServerSecurityContextRepository securityContextRepository;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -57,6 +59,8 @@ public class JwtAuthenticationWebFilter implements WebFilter, Ordered {
 
         return jwtService.validateAndExtract(token)
                 .flatMap(payload -> {
+                    exchange.getAttributes().put(GatewaySecurityExchangeAttributes.TOKEN_PAYLOAD, payload);
+
                     List<RoleName> roles = payload.roles() == null ? List.of() : payload.roles();
                     List<SimpleGrantedAuthority> authorities = roles.stream()
                             .map(role -> new SimpleGrantedAuthority(role.name()))
@@ -64,13 +68,11 @@ public class JwtAuthenticationWebFilter implements WebFilter, Ordered {
                     Authentication authentication =
                             new UsernamePasswordAuthenticationToken(payload, null, authorities);
 
-                    return Mono.defer(() -> chain.filter(exchange))
-                            .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                    SecurityContext securityContext = new SecurityContextImpl(authentication);
+                    return securityContextRepository.save(exchange, securityContext)
+                            .then(Mono.defer(() -> chain.filter(exchange)));
                 })
-                .onErrorResume(ex -> isJwtAuthenticationFailure(ex), ex -> {
-                    log.debug("JWT validation failed: {}", ex.getMessage());
-                    return unauthorized(exchange);
-                });
+                .onErrorResume(ex -> isJwtAuthenticationFailure(ex), ex -> unauthorized(exchange));
     }
 
     private static boolean isJwtAuthenticationFailure(Throwable ex) {

@@ -26,8 +26,7 @@ public class RegistrationOrchestratorTestDtoFactory {
                 "Password1",
                 "Ivan",
                 "Petrov",
-                LocalDate.of(1990, 1, 1),
-                "user@example.com"
+                LocalDate.of(1990, 1, 1)
         );
     }
 
@@ -63,7 +62,7 @@ public class RegistrationOrchestratorTestDtoFactory {
                 request.name(),
                 request.surname(),
                 request.birthDate(),
-                request.email()
+                request.login()
         );
     }
 
@@ -73,14 +72,14 @@ public class RegistrationOrchestratorTestDtoFactory {
                 request.name(),
                 request.surname(),
                 request.birthDate(),
-                request.email()
+                request.login()
         );
     }
 
     public RegisterGatewayResponse registerGatewayResponse(UUID userId, RegisterRequest request) {
         return new RegisterGatewayResponse(
                 userId,
-                request.email(),
+                request.login(),
                 request.name(),
                 request.surname(),
                 List.of(RoleName.ROLE_USER),

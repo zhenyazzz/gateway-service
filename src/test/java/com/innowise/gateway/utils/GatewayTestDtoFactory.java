@@ -19,8 +19,7 @@ public final class GatewayTestDtoFactory {
             "Password1a",
             "Ivan",
             "Petrov",
-            LocalDate.of(1995, 5, 20),
-            "newuser@example.com"
+            LocalDate.of(1995, 5, 20)
         );
     }
 
@@ -54,7 +53,7 @@ public final class GatewayTestDtoFactory {
             request.name(),
             request.surname(),
             request.birthDate(),
-            request.email()
+            request.login()
         );
     }
 
