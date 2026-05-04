@@ -77,7 +77,7 @@ services:
     container_name: auth-service
     restart: unless-stopped
     ports:
-      - "${AUTH_SERVICE_PORT:-8081}:8081"
+      - "${AUTH_SERVICE_PORT:-8082}:8082"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: ${AUTH_SPRING_DATASOURCE_URL:-jdbc:postgresql://auth-service-postgresql:5432/auth_service_db}
@@ -87,7 +87,7 @@ services:
       SPRING_DATA_REDIS_PORT: "6379"
       JWT_SECRET: ${JWT_SECRET:-Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tdGhpcy1pcy1hLTI1Ni1iaXQtc2VjcmV0LWtleS1mb3ItZGV2LW9ubHktY2hhbmdlLWl0}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -105,7 +105,7 @@ services:
     container_name: user-service
     restart: unless-stopped
     ports:
-      - "${USER_SERVICE_PORT:-8082}:8082"
+      - "${USER_SERVICE_PORT:-8081}:8081"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: ${USER_SPRING_DATASOURCE_URL:-jdbc:postgresql://user-service-postgresql:5432/user_service_db}
@@ -114,7 +114,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -140,7 +140,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${ORDER_SPRING_DATASOURCE_PASSWORD:-order_service_secret}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      USER_SERVICE_URL: ${ORDER_USER_SERVICE_URL:-http://user-service:8082}
+      USER_SERVICE_URL: ${ORDER_USER_SERVICE_URL:-http://user-service:8081}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
       interval: 10s
@@ -168,8 +168,8 @@ services:
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8081}
-      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:8082}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8082}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:8081}
       ORDER_SERVICE_URL: ${ORDER_SERVICE_URL:-http://order-service:8083}
       JWT_SECRET: ${JWT_SECRET:-Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tdGhpcy1pcy1hLTI1Ni1iaXQtc2VjcmV0LWtleS1mb3ItZGV2LW9ubHktY2hhbmdlLWl0}
     healthcheck:

@@ -131,6 +131,8 @@ app:
         - /api/users
       GET:
         - /actuator/health
+        - /actuator/health/liveness
+        - /actuator/health/readiness
 
 resilience4j:
   circuitbreaker:
@@ -184,3 +186,5 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+      probes:
+        enabled: true
