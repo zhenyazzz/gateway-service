@@ -6,3 +6,24 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  tracing:
+    enabled: ${MONITORING_TRACING_ENABLED:${MONITORING_ENABLED:true}}
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        enabled: ${MONITORING_METRICS_ENABLED:${MONITORING_ENABLED:true}}
+        url: ${MANAGEMENT_OTLP_METRICS_EXPORT_URL:http://otel-collector:4318/v1/metrics}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
