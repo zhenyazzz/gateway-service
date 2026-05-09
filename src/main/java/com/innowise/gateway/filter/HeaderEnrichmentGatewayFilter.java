@@ -17,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.innowise.gateway.config.SecurityProperties;
 import com.innowise.gateway.security.BearerTokenConstants;
+import com.innowise.gateway.security.GatewaySecurityExchangeAttributes;
 import com.innowise.gateway.security.RoleName;
 import com.innowise.gateway.security.TokenPayload;
 
@@ -39,6 +40,15 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        Object tokenAttr = exchange.getAttribute(GatewaySecurityExchangeAttributes.TOKEN_PAYLOAD);
+        if (tokenAttr instanceof TokenPayload payloadFromExchange
+                && payloadFromExchange.token() != null
+                && !payloadFromExchange.token().isBlank()) {
+            return chain.filter(exchange.mutate()
+                    .request(buildDownstreamRequest(request, path, payloadFromExchange))
+                    .build());
+        }
+
         return ReactiveSecurityContextHolder.getContext()
             .flatMap(ctx -> {
                 Authentication authentication = ctx.getAuthentication();
@@ -56,38 +66,43 @@ public class HeaderEnrichmentGatewayFilter implements GlobalFilter, Ordered {
                     return chain.filter(exchange);
                 }
 
-                List<RoleName> roles = rolesFromToken == null ? List.of() : rolesFromToken;
-                String bearerAuthorization = BearerTokenConstants.BEARER_PREFIX + rawToken;
-
-                ServerHttpRequest mutatedRequest = request.mutate()
-                    .headers(h -> {
-                        h.remove("X-User-Id");
-                        h.remove("X-User-Email");
-                        h.remove("X-User-Roles");
-                        h.remove(HttpHeaders.AUTHORIZATION);
-
-                        if (isAuthServicePath(path)) {
-                            h.set(HttpHeaders.AUTHORIZATION, bearerAuthorization);
-                        } else {
-                            if (userId != null) {
-                                h.set("X-User-Id", userId.toString());
-                            }
-
-                            if (email != null) {
-                                h.set("X-User-Email", email);
-                            }
-
-                            h.set("X-User-Roles",
-                                roles.stream()
-                                    .map(RoleName::name)
-                                    .collect(Collectors.joining(",")));
-                        }
-                    })
-                    .build();
-
-                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                TokenPayload fromContext = new TokenPayload(userId, email, rolesFromToken, rawToken);
+                return chain.filter(exchange.mutate()
+                        .request(buildDownstreamRequest(request, path, fromContext))
+                        .build());
             })
-            .switchIfEmpty(chain.filter(exchange));
+            .switchIfEmpty(Mono.defer(() -> chain.filter(exchange)));
+    }
+
+    private ServerHttpRequest buildDownstreamRequest(ServerHttpRequest request, String path, TokenPayload payload) {
+        List<RoleName> roles = payload.roles() == null ? List.of() : payload.roles();
+        String bearerAuthorization = BearerTokenConstants.BEARER_PREFIX + payload.token();
+
+        return request.mutate()
+                .headers(h -> {
+                    h.remove("X-User-Id");
+                    h.remove("X-User-Email");
+                    h.remove("X-User-Roles");
+                    h.remove(HttpHeaders.AUTHORIZATION);
+
+                    if (isAuthServicePath(path)) {
+                        h.set(HttpHeaders.AUTHORIZATION, bearerAuthorization);
+                    } else {
+                        if (payload.userId() != null) {
+                            h.set("X-User-Id", payload.userId().toString());
+                        }
+
+                        if (payload.email() != null) {
+                            h.set("X-User-Email", payload.email());
+                        }
+
+                        h.set("X-User-Roles",
+                                roles.stream()
+                                        .map(RoleName::name)
+                                        .collect(Collectors.joining(",")));
+                    }
+                })
+                .build();
     }
 
     private boolean isAuthServicePath(String path) {

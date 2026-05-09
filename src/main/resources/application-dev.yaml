@@ -3,3 +3,18 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${GATEWAY_REDIS_PORT:6379}
+
+app:
+  services:
+    auth-url: ${AUTH_SERVICE_URL:http://localhost:8082}
+    user-url: ${USER_SERVICE_URL:http://localhost:8081}
+    order-url: ${ORDER_SERVICE_URL:http://localhost:8083}
+    payment-url: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+
+management:
+  tracing:
+    enabled: ${MONITORING_TRACING_ENABLED:${MONITORING_ENABLED:false}}
+  otlp:
+    metrics:
+      export:
+        enabled: ${MONITORING_METRICS_ENABLED:${MONITORING_ENABLED:false}}

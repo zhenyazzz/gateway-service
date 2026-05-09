@@ -3,6 +3,7 @@ package com.innowise.gateway.service;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,15 @@ public class RegistrationOrchestrator {
                             .createProfile(registerRequestMapper.toUserCreateRequest(userId, request), idempotencyKey)
                             .map(userResponse -> registerRequestMapper.toRegisterGatewayResponse(registerResponse, userResponse))
                             .onErrorResume(profileEx -> {
-                                log.error("Failed to create profile for user {}!", userId, profileEx);
+                                if (profileEx instanceof WebClientResponseException wre) {
+                                    log.error(
+                                            "Failed to create profile for user {} — user-service status={} body={}",
+                                            userId,
+                                            wre.getStatusCode(),
+                                            wre.getResponseBodyAsString());
+                                } else {
+                                    log.error("Failed to create profile for user {}!", userId, profileEx);
+                                }
 
                                 return authClient
                                         .deleteUserInternal(userId, idempotencyKey)

@@ -3,6 +3,7 @@ package com.innowise.gateway.client.webclient;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -19,6 +20,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class WebClientUserClient implements UserClient {
 
+    private static final String IDEMPOTENCY_HEADER = "X-Idempotency-Key";
+
     @Qualifier("userServiceClient")
     private final WebClient webClient;
 
@@ -28,6 +31,7 @@ public class WebClientUserClient implements UserClient {
     public Mono<UserResponse> createProfile(UserCreateRequest request, String idempotencyKey) {
         return webClient.post()
                 .uri("/users")
+                .headers(h -> addIdempotency(h, idempotencyKey))
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(UserResponse.class);
@@ -38,6 +42,7 @@ public class WebClientUserClient implements UserClient {
     public Mono<Void> deleteProfile(UUID userId, String idempotencyKey) {
         return webClient.delete()
                 .uri("/users/{id}", userId)
+                .headers(h -> addIdempotency(h, idempotencyKey))
                 .retrieve()
                 .toBodilessEntity()
                 .then();
@@ -48,7 +53,14 @@ public class WebClientUserClient implements UserClient {
     public Mono<UserResponse> restoreProfile(UUID userId, String idempotencyKey) {
         return webClient.post()
                 .uri("/users/{id}/restore", userId)
+                .headers(h -> addIdempotency(h, idempotencyKey))
                 .retrieve()
                 .bodyToMono(UserResponse.class);
+    }
+
+    private static void addIdempotency(HttpHeaders headers, String idempotencyKey) {
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            headers.set(IDEMPOTENCY_HEADER, idempotencyKey);
+        }
     }
 }

@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -38,6 +40,15 @@ public class WebClientConfig {
     @Value("${app.services.order-url}")
     private String orderUrl;
 
+    @Value("${app.http-client.connect-timeout-ms:5000}")
+    private int connectTimeoutMillis;
+
+    @Value("${app.http-client.response-timeout-seconds:30}")
+    private int responseTimeoutSeconds;
+
+    @Value("${app.http-client.read-write-timeout-seconds:30}")
+    private int readWriteTimeoutSeconds;
+
     private static final String HEADER_USER_ID = "X-User-Id";
     private static final String HEADER_USER_EMAIL = "X-User-Email";
     private static final String HEADER_USER_ROLES = "X-User-Roles";
@@ -45,11 +56,11 @@ public class WebClientConfig {
 
     private ReactorClientHttpConnector clientHttpConnector() {
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .responseTimeout(Duration.ofSeconds(5))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
+                .responseTimeout(Duration.ofSeconds(responseTimeoutSeconds))
                 .doOnConnected(conn -> conn
-                        .addHandlerLast(new ReadTimeoutHandler(5))
-                        .addHandlerLast(new WriteTimeoutHandler(5)));
+                        .addHandlerLast(new ReadTimeoutHandler(readWriteTimeoutSeconds))
+                        .addHandlerLast(new WriteTimeoutHandler(readWriteTimeoutSeconds)));
         return new ReactorClientHttpConnector(httpClient);
     }
 
@@ -85,9 +96,12 @@ public class WebClientConfig {
 
     private Mono<TokenPayload> currentPayload() {
         return ReactiveSecurityContextHolder.getContext()
-                .map(ctx -> ctx.getAuthentication())
+                .map(SecurityContext::getAuthentication)
+                .filter(UsernamePasswordAuthenticationToken.class::isInstance)
                 .cast(UsernamePasswordAuthenticationToken.class)
-                .map(auth -> (TokenPayload) auth.getPrincipal());
+                .map(Authentication::getPrincipal)
+                .filter(TokenPayload.class::isInstance)
+                .cast(TokenPayload.class);
     }
 
     private ExchangeFilterFunction requestIdFilter() {
