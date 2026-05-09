@@ -40,6 +40,15 @@ public class WebClientConfig {
     @Value("${app.services.order-url}")
     private String orderUrl;
 
+    @Value("${app.http-client.connect-timeout-ms:5000}")
+    private int connectTimeoutMillis;
+
+    @Value("${app.http-client.response-timeout-seconds:30}")
+    private int responseTimeoutSeconds;
+
+    @Value("${app.http-client.read-write-timeout-seconds:30}")
+    private int readWriteTimeoutSeconds;
+
     private static final String HEADER_USER_ID = "X-User-Id";
     private static final String HEADER_USER_EMAIL = "X-User-Email";
     private static final String HEADER_USER_ROLES = "X-User-Roles";
@@ -47,11 +56,11 @@ public class WebClientConfig {
 
     private ReactorClientHttpConnector clientHttpConnector() {
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .responseTimeout(Duration.ofSeconds(5))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
+                .responseTimeout(Duration.ofSeconds(responseTimeoutSeconds))
                 .doOnConnected(conn -> conn
-                        .addHandlerLast(new ReadTimeoutHandler(5))
-                        .addHandlerLast(new WriteTimeoutHandler(5)));
+                        .addHandlerLast(new ReadTimeoutHandler(readWriteTimeoutSeconds))
+                        .addHandlerLast(new WriteTimeoutHandler(readWriteTimeoutSeconds)));
         return new ReactorClientHttpConnector(httpClient);
     }
 
